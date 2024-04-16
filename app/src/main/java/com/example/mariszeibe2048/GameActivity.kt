@@ -10,22 +10,21 @@ import androidx.core.view.GestureDetectorCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import kotlin.math.PI
-import kotlin.math.acos
-import kotlin.math.atan
 import kotlin.math.atan2
 import kotlin.math.pow
-import kotlin.math.sqrt
+import kotlin.random.Random
+
+const val FIELD_SIZE = 4
+const val POW_2_RARITY = 4
 
 enum class Direction {
     UP, DOWN, RIGHT, LEFT
 }
 
-val FIELD_SIZE = 4
-
 class GameActivity : AppCompatActivity(), GestureDetector.OnGestureListener {
 
     private lateinit var mDetector: GestureDetectorCompat
-    private var gameField = Array(FIELD_SIZE) { Array(FIELD_SIZE) { } }
+    private var gameField = Array(FIELD_SIZE) { Array(FIELD_SIZE) { 0 } }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -87,13 +86,71 @@ class GameActivity : AppCompatActivity(), GestureDetector.OnGestureListener {
             else -> Direction.LEFT
         }
         Log.d("DEBUG", direction.toString())
+        makeMove(direction)
+        printField()
+        return true
+    }
+
+    private fun addRandomTile() {
+        val emptyFields = mutableListOf<Pair<Int, Int>>()
+        for (row in 0..< FIELD_SIZE) {
+            for (col in 0..< FIELD_SIZE) {
+                if (gameField[row][col] == 0) {
+                    emptyFields.add(Pair(row, col))
+                }
+            }
+        }
+        if (emptyFields.size > 0) {
+            val randomEmptyField = emptyFields[Random.nextInt(0, emptyFields.size)]
+            gameField[randomEmptyField.first][randomEmptyField.second] =
+                (Random.nextInt(0, POW_2_RARITY) / (POW_2_RARITY - 1)) + 1
+        }
+    }
+
+    private fun makeMove(direction: Direction) {
+        val xyRange = if (direction in setOf(Direction.LEFT, Direction.UP)) {
+            0 ..< FIELD_SIZE
+        } else {
+            (FIELD_SIZE-1) downTo 0
+        }
+
+        for (a in xyRange) {
+            for (b in xyRange) {
+                val dRange = if (direction in setOf(Direction.LEFT, Direction.UP)) {
+                    1..< (FIELD_SIZE - b)
+                } else {
+                    -1 downTo -b
+                }
+                for (d in dRange) {
+                    val x0: Int; val y0: Int; val x1: Int; val y1: Int
+                    if (direction in setOf(Direction.UP, Direction.DOWN)) {
+                        x0 = b; y0 = a; x1 = b+d; y1 = a
+                    } else {
+                        x0 = a; y0 = b; x1 = a; y1 = b+d
+                    }
+                    if (gameField[x0][y0] == 0) {
+                        gameField[x0][y0] = gameField[x1][y1]
+                        gameField[x1][y1] = 0
+                    } else if (gameField[x0][y0] == gameField[x1][y1]) {
+                        gameField[x0][y0]++
+                        gameField[x1][y1] = 0
+                        break
+                    } else if (gameField[x1][y1] != 0) {
+                        break
+                    }
+                }
+            }
+        }
+        addRandomTile()
+    }
+
+    private fun printField() {
         for (row in gameField) {
             var text = ""
             for (col in row) {
-                text += "$col "
+                text += if (col == 0) "-    " else "%-5d".format(2.0.pow(col).toInt())
             }
             Log.d("DEBUG", text)
         }
-        return true
     }
 }
