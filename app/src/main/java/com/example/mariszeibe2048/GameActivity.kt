@@ -4,17 +4,15 @@ import android.os.Bundle
 import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
+import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GestureDetectorCompat
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.pow
 import kotlin.random.Random
 
-const val FIELD_SIZE = 4
 const val POW_2_RARITY = 4
 
 enum class Direction {
@@ -24,18 +22,30 @@ enum class Direction {
 class GameActivity : AppCompatActivity(), GestureDetector.OnGestureListener {
 
     private lateinit var mDetector: GestureDetectorCompat
-    private var gameField = Array(FIELD_SIZE) { Array(FIELD_SIZE) { 0 } }
+    private lateinit var view: GameView
+    private lateinit var scoreText: TextView
+    private var fieldSize = 0
+    private var baseNumber = 0.0
+    private var score = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        fieldSize = intent.getIntExtra("fieldSize", 4)
+        baseNumber = intent.getIntExtra("baseNumber", 2).toDouble()
         super.onCreate(savedInstanceState)
         mDetector = GestureDetectorCompat(this, this)
         enableEdgeToEdge()
         setContentView(R.layout.activity_game)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
+//        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+//            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+//            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+//            insets
+//        }
+        scoreText = findViewById(R.id.scoreText)
+        scoreText.text = getString(R.string.score, score)
+        view = findViewById(R.id.gameField)
+        view.baseNumber = baseNumber
+        view.gameField = Array(fieldSize) { Array(fieldSize) { 0 } }
+        addRandomTile()
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -87,37 +97,40 @@ class GameActivity : AppCompatActivity(), GestureDetector.OnGestureListener {
         }
         Log.d("DEBUG", direction.toString())
         makeMove(direction)
+        addRandomTile()
+        
         printField()
+        view.invalidate()
         return true
     }
 
     private fun addRandomTile() {
         val emptyFields = mutableListOf<Pair<Int, Int>>()
-        for (row in 0..< FIELD_SIZE) {
-            for (col in 0..< FIELD_SIZE) {
-                if (gameField[row][col] == 0) {
+        for (row in 0..< fieldSize) {
+            for (col in 0..< fieldSize) {
+                if (view.gameField[row][col] == 0) {
                     emptyFields.add(Pair(row, col))
                 }
             }
         }
         if (emptyFields.size > 0) {
             val randomEmptyField = emptyFields[Random.nextInt(0, emptyFields.size)]
-            gameField[randomEmptyField.first][randomEmptyField.second] =
+            view.gameField[randomEmptyField.first][randomEmptyField.second] =
                 (Random.nextInt(0, POW_2_RARITY) / (POW_2_RARITY - 1)) + 1
         }
     }
 
     private fun makeMove(direction: Direction) {
         val xyRange = if (direction in setOf(Direction.LEFT, Direction.UP)) {
-            0 ..< FIELD_SIZE
+            0 ..< fieldSize
         } else {
-            (FIELD_SIZE-1) downTo 0
+            (fieldSize-1) downTo 0
         }
 
         for (a in xyRange) {
             for (b in xyRange) {
                 val dRange = if (direction in setOf(Direction.LEFT, Direction.UP)) {
-                    1..< (FIELD_SIZE - b)
+                    1..< (fieldSize - b)
                 } else {
                     -1 downTo -b
                 }
@@ -128,27 +141,28 @@ class GameActivity : AppCompatActivity(), GestureDetector.OnGestureListener {
                     } else {
                         x0 = a; y0 = b; x1 = a; y1 = b+d
                     }
-                    if (gameField[x0][y0] == 0) {
-                        gameField[x0][y0] = gameField[x1][y1]
-                        gameField[x1][y1] = 0
-                    } else if (gameField[x0][y0] == gameField[x1][y1]) {
-                        gameField[x0][y0]++
-                        gameField[x1][y1] = 0
+                    if (view.gameField[x0][y0] == 0) {
+                        view.gameField[x0][y0] = view.gameField[x1][y1]
+                        view.gameField[x1][y1] = 0
+                    } else if (view.gameField[x0][y0] == view.gameField[x1][y1]) {
+                        view.gameField[x0][y0]++
+                        view.gameField[x1][y1] = 0
+                        score += (baseNumber * 2.0.pow(view.gameField[x0][y0] - 1)).toInt()
+                        scoreText.text = getString(R.string.score, score)
                         break
-                    } else if (gameField[x1][y1] != 0) {
+                    } else if (view.gameField[x1][y1] != 0) {
                         break
                     }
                 }
             }
         }
-        addRandomTile()
     }
 
     private fun printField() {
-        for (row in gameField) {
+        for (row in view.gameField) {
             var text = ""
             for (col in row) {
-                text += if (col == 0) "-    " else "%-5d".format(2.0.pow(col).toInt())
+                text += if (col == 0) "-    " else "%-5d".format(baseNumber.pow(col).toInt())
             }
             Log.d("DEBUG", text)
         }

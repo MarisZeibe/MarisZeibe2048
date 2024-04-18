@@ -7,4 +7,31 @@
     android:layout_height="match_parent"
     tools:context=".GameActivity">
 
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#BAAC9F"
+        android:layoutDirection="rtl"
+        android:paddingTop="30dp"
+        android:paddingBottom="10dp"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/scoreText"
+            android:layout_width="240dp"
+            android:layout_height="wrap_content"
+            android:text="@string/score"
+            android:textSize="24sp" />
+    </FrameLayout>
+
+    <view
+        android:id="@+id/gameField"
+        class="com.example.mariszeibe2048.GameView"
+        android:layout_width="350dp"
+        android:layout_height="350dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
