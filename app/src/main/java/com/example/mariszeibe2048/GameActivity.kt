@@ -1,6 +1,5 @@
 package com.example.mariszeibe2048
 
-import android.content.Intent
 import android.os.Bundle
 import android.view.GestureDetector
 import android.view.MotionEvent
@@ -38,14 +37,8 @@ class GameActivity : AppCompatActivity(), GestureDetector.OnGestureListener {
         // The detector is used for detecting fling (swipe) actions
         mDetector = GestureDetectorCompat(this, this)
 
-        // Sets the back button navigation to MainMenuActivity with game parameters for the input fields
-        // The button appears when the game ends
-        findViewById<Button>(R.id.backToMenuButton).setOnClickListener {
-            val intent = Intent(this, MainMenuActivity::class.java)
-            intent.putExtra("fieldSize", fieldSize)
-            intent.putExtra("baseNumber", baseNumber)
-            startActivity(intent)
-        }
+        // Sets the back button action, the button appears when the game ends
+        findViewById<Button>(R.id.backToMenuButton).setOnClickListener { finish() }
 
         // Sets the score text
         scoreText = findViewById(R.id.scoreText)
