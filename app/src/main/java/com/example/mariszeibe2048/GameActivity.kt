@@ -1,93 +1,87 @@
 package com.example.mariszeibe2048
 
+import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
+import android.view.View.VISIBLE
+import android.widget.Button
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GestureDetectorCompat
 import kotlin.math.PI
 import kotlin.math.atan2
-import kotlin.math.pow
-import kotlin.random.Random
-
-const val POW_2_RARITY = 4
-
-enum class Direction {
-    UP, DOWN, RIGHT, LEFT
-}
 
 class GameActivity : AppCompatActivity(), GestureDetector.OnGestureListener {
-
     private lateinit var mDetector: GestureDetectorCompat
-    private lateinit var view: GameView
+    private lateinit var gameOverScreen: LinearLayout
+    private lateinit var gameOverScore: TextView
     private lateinit var scoreText: TextView
+    private lateinit var game: GameView
+    private var baseNumber = 0
     private var fieldSize = 0
-    private var baseNumber = 0.0
     private var score = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        fieldSize = intent.getIntExtra("fieldSize", 4)
-        baseNumber = intent.getIntExtra("baseNumber", 2).toDouble()
+
         super.onCreate(savedInstanceState)
-        mDetector = GestureDetectorCompat(this, this)
+
+        fieldSize = intent.getIntExtra("fieldSize", 4)
+        baseNumber = intent.getIntExtra("baseNumber", 2)
+
         enableEdgeToEdge()
+
         setContentView(R.layout.activity_game)
-//        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-//            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-//            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-//            insets
-//        }
+
+        // The detector is used for detecting fling (swipe) actions
+        mDetector = GestureDetectorCompat(this, this)
+
+        // Sets the back button navigation to MainMenuActivity with game parameters for the input fields
+        // The button appears when the game ends
+        findViewById<Button>(R.id.backToMenuButton).setOnClickListener {
+            val intent = Intent(this, MainMenuActivity::class.java)
+            intent.putExtra("fieldSize", fieldSize)
+            intent.putExtra("baseNumber", baseNumber)
+            startActivity(intent)
+        }
+
+        // Sets the score text
         scoreText = findViewById(R.id.scoreText)
         scoreText.text = getString(R.string.score, score)
-        view = findViewById(R.id.gameField)
-        view.baseNumber = baseNumber
-        view.gameField = Array(fieldSize) { Array(fieldSize) { 0 } }
-        addRandomTile()
+
+        // Starts the game by passing the game parameters
+        game = findViewById(R.id.gameField)
+        game.startGame(fieldSize, baseNumber)
+
+        gameOverScreen = findViewById(R.id.gameOverScreen)
+        gameOverScore = findViewById(R.id.gameOverScore)
     }
 
+    // Unused touch actions
+    override fun onLongPress(e: MotionEvent) { }
+    override fun onShowPress(e: MotionEvent) { }
+    override fun onDown(e: MotionEvent): Boolean { return false }
+    override fun onSingleTapUp(e: MotionEvent): Boolean { return false }
+    override fun onScroll( e1: MotionEvent?, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean { return false }
+
+    // Binds the touch detector
     override fun onTouchEvent(event: MotionEvent): Boolean {
         return if (mDetector.onTouchEvent(event)) {
             true
         } else {
             super.onTouchEvent(event)
         }
-
     }
 
-    override fun onDown(e: MotionEvent): Boolean {
-        return false
-    }
+    override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
 
-    override fun onShowPress(e: MotionEvent) {
-        return
-    }
+        if (gameOverScreen.visibility == VISIBLE) {
+            return false
+        }
 
-    override fun onSingleTapUp(e: MotionEvent): Boolean {
-        return false
-    }
-
-    override fun onScroll(
-        e1: MotionEvent?,
-        e2: MotionEvent,
-        distanceX: Float,
-        distanceY: Float
-    ): Boolean {
-        return false
-    }
-
-    override fun onLongPress(e: MotionEvent) {
-        return
-    }
-
-    override fun onFling(
-        e1: MotionEvent?,
-        e2: MotionEvent,
-        velocityX: Float,
-        velocityY: Float
-    ): Boolean {
+        // Calculates the swipe direction
         val angle = 180 * atan2(velocityY, velocityX) / PI
         val direction = when (angle) {
             in -135.0..-45.0 -> Direction.UP
@@ -95,76 +89,23 @@ class GameActivity : AppCompatActivity(), GestureDetector.OnGestureListener {
             in 45.0..135.0 -> Direction.DOWN
             else -> Direction.LEFT
         }
-        Log.d("DEBUG", direction.toString())
-        makeMove(direction)
-        addRandomTile()
-        
-        printField()
-        view.invalidate()
+
+        game.makeMove(direction)
+        score = game.getScore()
+        scoreText.text = getString(R.string.score, score)
+
+        if (game.hasGameEnded()) {
+            // Show the end screen with animation
+            gameOverScore.text = getString(R.string.end_score, score)
+            gameOverScreen.visibility = VISIBLE
+            gameOverScreen.alpha = 0F
+            gameOverScreen.animate().apply {
+                startDelay = 1000
+                duration = 1000
+                alpha(1F)
+            }
+        }
+
         return true
-    }
-
-    private fun addRandomTile() {
-        val emptyFields = mutableListOf<Pair<Int, Int>>()
-        for (row in 0..< fieldSize) {
-            for (col in 0..< fieldSize) {
-                if (view.gameField[row][col] == 0) {
-                    emptyFields.add(Pair(row, col))
-                }
-            }
-        }
-        if (emptyFields.size > 0) {
-            val randomEmptyField = emptyFields[Random.nextInt(0, emptyFields.size)]
-            view.gameField[randomEmptyField.first][randomEmptyField.second] =
-                (Random.nextInt(0, POW_2_RARITY) / (POW_2_RARITY - 1)) + 1
-        }
-    }
-
-    private fun makeMove(direction: Direction) {
-        val xyRange = if (direction in setOf(Direction.LEFT, Direction.UP)) {
-            0 ..< fieldSize
-        } else {
-            (fieldSize-1) downTo 0
-        }
-
-        for (a in xyRange) {
-            for (b in xyRange) {
-                val dRange = if (direction in setOf(Direction.LEFT, Direction.UP)) {
-                    1..< (fieldSize - b)
-                } else {
-                    -1 downTo -b
-                }
-                for (d in dRange) {
-                    val x0: Int; val y0: Int; val x1: Int; val y1: Int
-                    if (direction in setOf(Direction.UP, Direction.DOWN)) {
-                        x0 = b; y0 = a; x1 = b+d; y1 = a
-                    } else {
-                        x0 = a; y0 = b; x1 = a; y1 = b+d
-                    }
-                    if (view.gameField[x0][y0] == 0) {
-                        view.gameField[x0][y0] = view.gameField[x1][y1]
-                        view.gameField[x1][y1] = 0
-                    } else if (view.gameField[x0][y0] == view.gameField[x1][y1]) {
-                        view.gameField[x0][y0]++
-                        view.gameField[x1][y1] = 0
-                        score += (baseNumber * 2.0.pow(view.gameField[x0][y0] - 1)).toInt()
-                        scoreText.text = getString(R.string.score, score)
-                        break
-                    } else if (view.gameField[x1][y1] != 0) {
-                        break
-                    }
-                }
-            }
-        }
-    }
-
-    private fun printField() {
-        for (row in view.gameField) {
-            var text = ""
-            for (col in row) {
-                text += if (col == 0) "-    " else "%-5d".format(baseNumber.pow(col).toInt())
-            }
-            Log.d("DEBUG", text)
-        }
     }
 }

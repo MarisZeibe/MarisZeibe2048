@@ -7,6 +7,15 @@
     android:layout_height="match_parent"
     tools:context=".MainMenuActivity">
 
+    <TextView
+        android:id="@+id/author"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:text="@string/author"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -19,23 +28,29 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
+        <TextView
+            android:id="@+id/textView2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:paddingBottom="50dp"
+            android:text="@string/title"
+            android:textSize="96sp" />
+
         <Button
             android:id="@+id/startButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:backgroundTint="@color/primary"
             android:text="@string/start_button" />
-
-        <Space
-            android:layout_width="match_parent"
-            android:layout_height="61dp"
-            android:layout_weight="1" />
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:paddingTop="100dp">
 
             <TextView
                 android:id="@+id/fieldSizeText"
@@ -49,16 +64,15 @@
                 android:layout_width="240dp"
                 android:layout_height="wrap_content"
                 android:max="10"
-                android:progress="3" />
-
-            <Space
-                android:layout_width="match_parent"
-                android:layout_height="25dp" />
+                android:progress="3"
+                android:progressTint="@color/primary"
+                android:thumbTint="@color/primary" />
 
             <TextView
                 android:id="@+id/baseNumberText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:paddingTop="30dp"
                 android:text="@string/base_number" />
 
             <SeekBar
@@ -67,7 +81,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:max="10"
-                android:progress="0" />
+                android:progress="0"
+                android:progressTint="@color/primary"
+                android:thumbTint="@color/primary" />
         </LinearLayout>
 
     </LinearLayout>
